@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-your-secret-key-here'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else []
 
 
 # Application definition
@@ -125,6 +126,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
@@ -135,7 +137,9 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True  # For development only
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in development
+if not DEBUG:
+    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if os.environ.get('CORS_ALLOWED_ORIGINS') else []
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -159,7 +163,8 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ALWAYS_EAGER = True  # For development
 
-# GeoDjango settings - Update these paths with the actual locations
-GEOS_LIBRARY_PATH = r'C:\Users\Lahcen.OUSAYD\AppData\Local\anaconda3\envs\WebAppYG\Library\bin\geos_c.dll'
-GDAL_LIBRARY_PATH = r'C:\Users\Lahcen.OUSAYD\AppData\Local\anaconda3\envs\WebAppYG\Library\bin\gdal.dll'
-PROJ_LIB = r'C:\Users\Lahcen.OUSAYD\AppData\Local\anaconda3\envs\WebAppYG\Library\share\proj'
+# GeoDjango settings - Windows-specific paths (commented out for Linux deployment)
+# Uncomment and update these paths if needed on Windows
+# GEOS_LIBRARY_PATH = r'C:\Users\Lahcen.OUSAYD\AppData\Local\anaconda3\envs\WebAppYG\Library\bin\geos_c.dll'
+# GDAL_LIBRARY_PATH = r'C:\Users\Lahcen.OUSAYD\AppData\Local\anaconda3\envs\WebAppYG\Library\bin\gdal.dll'
+# PROJ_LIB = r'C:\Users\Lahcen.OUSAYD\AppData\Local\anaconda3\envs\WebAppYG\Library\share\proj'
