@@ -1,0 +1,2728 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morocco Yield Gap Analysis Platform</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet-image@0.4.0/leaflet-image.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0f4c3a 0%, #1e5a4a 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(74, 157, 122, 0.3);
+        }
+
+        .header-top {
+            background: linear-gradient(135deg, #0f4c3a 0%, #1e5a4a 100%);
+            padding: 0.8rem 0;
+            border-bottom: 1px solid rgba(74, 157, 122, 0.3);
+        }
+
+        .header-banner {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            padding: 1.2rem 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .banner-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .banner-controls .view-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .banner-controls .tab-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .banner-controls .tab-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .banner-controls .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .banner-controls .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .banner-controls .controls-row span {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .banner-controls .controls-row select {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            min-width: 80px;
+        }
+
+        .banner-controls .controls-row select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .banner-controls .controls-row select option {
+            background: #0f4c3a;
+            color: #ffffff;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 2rem;
+            position: relative;
+        }
+
+        .banner-title {
+            color: #ffffff;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .header-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.4rem 0.8rem;
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .nav-btn i {
+            font-size: 0.9rem;
+        }
+
+
+        .parcel-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 0.8rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border: none;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+        }
+
+        .action-btn:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .action-btn i {
+            font-size: 0.8rem;
+        }
+
+        /* Login/Register Panel */
+        .login-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-panel.active {
+            display: flex;
+        }
+
+        .login-content {
+            background: linear-gradient(135deg, #1a4d3a 0%, #2d5a47 100%);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .login-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-close:hover {
+            opacity: 1;
+        }
+
+        .login-tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .login-tab {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1rem;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .login-tab.active {
+            opacity: 1;
+            border-bottom-color: #4ade80;
+        }
+
+        .login-form {
+            display: none;
+        }
+
+        .login-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4ade80;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            transform: translateY(-1px);
+        }
+
+        /* Publications Panel */
+        .publications-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .publications-panel.active {
+            display: flex;
+        }
+
+        .publications-content {
+            background: linear-gradient(135deg, #1a4d3a 0%, #2d5a47 100%);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .publications-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .publications-close:hover {
+            opacity: 1;
+        }
+
+        .publication-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .publication-title {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .publication-authors {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .publication-journal {
+            color: #4ade80;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .publication-link {
+            color: #4ade80;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .publication-link:hover {
+            color: #22c55e;
+        }
+
+        /* About Dropdown */
+        .about-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .about-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: linear-gradient(135deg, #1a4d3a 0%, #2d5a47 100%);
+            min-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            padding: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .about-dropdown:hover .about-content {
+            display: block;
+        }
+
+        .about-title {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 0.5rem;
+        }
+
+        .about-description {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .about-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .about-features li {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1rem;
+            position: relative;
+        }
+
+        .about-features li:before {
+            content: "•";
+            color: #4ade80;
+            position: absolute;
+            left: 0;
+        }
+
+        /* Publications Page */
+        .publications-page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #ffffff;
+            z-index: 10000;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* Internet Explorer 10+ */
+        }
+
+        .publications-page::-webkit-scrollbar {
+            display: none; /* WebKit */
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1200px) {
+            .publications-content {
+                grid-template-columns: repeat(2, 1fr);
+                width: 100vw;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .publications-content {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+                width: 100vw;
+                max-width: none;
+            }
+        }
+
+        .publications-page.active {
+            display: block;
+        }
+
+        .publications-header {
+            background: linear-gradient(135deg, #0f4c3a 0%, #1e5a4a 100%);
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            width: 100vw;
+            box-sizing: border-box;
+        }
+
+        .publications-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .publications-close-btn:hover {
+            opacity: 1;
+        }
+
+        .publications-title {
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .publications-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+        }
+
+        .publications-content {
+            width: 100vw;
+            padding: 2rem;
+            background: #ffffff;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: 1fr;
+            gap: 2rem;
+            min-height: calc(100vh - 200px);
+            box-sizing: border-box;
+            margin: 0;
+            max-width: none;
+        }
+
+        .publication-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .publication-card h2 {
+            color: #1f2937;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            line-height: 1.4;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            text-overflow: ellipsis;
+        }
+
+        .publication-meta {
+            color: #059669;
+            font-size: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .publication-authors {
+            color: #6b7280;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            text-overflow: ellipsis;
+        }
+
+        .publication-summary {
+            color: #374151;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 0;
+            text-align: justify;
+            flex: 1;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 6;
+            -webkit-box-orient: vertical;
+            text-overflow: ellipsis;
+        }
+
+        .publication-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+
+        .publication-link:hover {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: transparent;
+            border: none;
+            padding: 0;
+            transition: all 0.3s ease;
+            max-width: 350px;
+            width: fit-content;
+        }
+        
+        .logo:hover {
+            transform: translateY(-1px);
+        }
+
+        .logo-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #ffffff;
+            border-radius: 50%;
+            color: #059669;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            white-space: nowrap;
+        }
+
+
+        .logo-main {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+            line-height: 1;
+            margin: 0;
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-style: normal;
+        }
+
+        .logo-subtitle {
+            font-size: 0.6rem;
+            color: #d1d5db;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            margin-top: 2px;
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-style: normal;
+            line-height: 1.1;
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .data-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .view-tabs {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            color: #1a1a1a;
+            border-color: #4ade80;
+            box-shadow: 0 2px 10px rgba(74, 222, 128, 0.3);
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls-row span {
+            color: #a0a0a0;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .controls-row select {
+            background: rgba(26, 26, 26, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        .controls-row select:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 140px);
+            position: relative;
+        }
+
+        .sidebar {
+            width: 380px;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .controls-panel h3 {
+            color: #4ade80;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #0a0a0a;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .info-panel {
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-panel h3 {
+            color: #4ade80;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
+
+        .info-value {
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .chart-container {
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-container h3 {
+            color: #4ade80;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-container canvas {
+            max-height: 200px;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 4rem;
+            right: 2rem;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            z-index: 1000;
+            min-width: 220px;
+        }
+
+        .legend h4 {
+            color: #4ade80;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 12px;
+            margin-right: 0.75rem;
+            border-radius: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .region-info-panel {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            z-index: 1000;
+            max-width: 320px;
+            display: none;
+        }
+
+        .region-info-panel h3 {
+            color: #4ade80;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #4ade80;
+            padding-bottom: 0.5rem;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 1001;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #4ade80;
+        }
+
+        .loading i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Print styles for easy export */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .sidebar, .header, .info-panel, #region-info-panel {
+                display: none !important;
+            }
+            #map {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .legend {
+                position: fixed !important;
+                right: 30px !important;
+                bottom: 30px !important;
+                display: block !important;
+                background: white !important;
+                color: black !important;
+                border: 3px solid #333 !important;
+                padding: 20px !important;
+                z-index: 10000 !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+            }
+            .legend h4 {
+                color: #333 !important;
+                font-size: 18px !important;
+                margin-bottom: 15px !important;
+            }
+            .legend-color {
+                border: 1px solid #666 !important;
+                width: 30px !important;
+                height: 20px !important;
+            }
+            .legend-item {
+                margin: 8px 0 !important;
+                font-size: 14px !important;
+                color: #333 !important;
+            }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            color: #000000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 222, 128, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: #ffffff;
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-group label {
+            display: block;
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .control-group select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .control-group select:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+
+        .metric-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .metric-btn {
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            text-align: center;
+            color: #a0a0a0;
+        }
+
+        .metric-btn:hover {
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+            color: #4ade80;
+        }
+
+        .metric-btn.active {
+            border-color: #4ade80;
+            background: #4ade80;
+            color: #000000;
+        }
+
+        .boundary-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .boundary-controls label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #a0a0a0;
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .boundary-controls label:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        .boundary-controls input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #4ade80;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4ade80;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #a0a0a0;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 40vh;
+            }
+            
+            .map-container {
+                height: 60vh;
+            }
+            
+            .region-info-panel {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin: 1rem;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+        <div class="header">
+            <div class="header-top">
+                <div class="header-content">
+                    <div class="logo">
+                        <div class="logo-icon">
+                            🌾
+                        </div>
+                        <div class="logo-text">
+                            <div class="logo-main">PAMOCPP</div>
+                            <div class="logo-subtitle">Pan Moroccan Yield & Precipitation Gaps Platform</div>
+                        </div>
+                    </div>
+                    <div class="header-nav">
+                        <a href="#" class="nav-btn" onclick="resetToDefaults(); return false;">
+                            <span>Home</span>
+                        </a>
+                        <a href="#" class="nav-btn">
+                            <span>Tools</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </a>
+                        <a href="#" class="nav-btn">
+                            <span>Analysis</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </a>
+                        <a href="#" class="nav-btn">
+                            <span>Data</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </a>
+                        <a href="#" class="nav-btn" onclick="showPublications()">
+                            <span>Publications</span>
+                        </a>
+                        <a href="#" class="nav-btn">
+                            <span>About</span>
+                        </a>
+                        <a href="#" class="nav-btn" onclick="showLogin()">
+                            <span>Login</span>
+                        </a>
+                        <a href="#" class="nav-btn">
+                            <i class="fas fa-search"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="header-banner">
+                <div class="banner-controls">
+                    <div class="view-tabs">
+                        <button class="tab-btn active" data-view="regions">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <span>Regional</span>
+                        </button>
+                        <button class="tab-btn" data-view="parcels">
+                            <i class="fas fa-map-pin"></i>
+                            <span>Parcel</span>
+                        </button>
+                    </div>
+                    <div class="controls-row">
+                        <span>View</span>
+                        <select id="metric-select">
+                            <optgroup label="Yield Levels (t/ha)">
+                                <option value="actual_yield" selected>Actual Yield</option>
+                                <option value="potential_yield">Potential Yield</option>
+                                <option value="water_limited_yield">Water Limited Yield</option>
+                                <option value="nutrient_limited_yield">Nutrient Limited Yield</option>
+                                <option value="unfertilized_yield">Unfertilized Yield</option>
+                            </optgroup>
+                            <optgroup label="Yield Gaps (t/ha)">
+                                <option value="yield_gap">Total Exploitable Gap</option>
+                                <option value="water_gap">Water Limitation Gap</option>
+                                <option value="nutrient_gap">Nutrient Limitation Gap</option>
+                                <option value="management_gap">Management Gap</option>
+                                <option value="fertilizer_response_gap">Fertilizer Response Gap</option>
+                            </optgroup>
+                            <optgroup label="Percentage">
+                                <option value="yield_gap_percent">Yield Gap Percentage</option>
+                            </optgroup>
+                        </select>
+                        <span>for</span>
+        <select id="crop-select">
+                            <option value="wheat" selected>Wheat</option>
+        </select>
+                        <span>in</span>
+        <select id="year-select">
+                            <option value="9999" selected>Average</option>
+        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login/Register Panel -->
+    <div id="login-panel" class="login-panel">
+        <div class="login-content">
+            <button class="login-close" onclick="closeLoginPanel()">&times;</button>
+            <div class="login-tabs">
+                <button class="login-tab active" onclick="switchLoginTab('login')">Login</button>
+                <button class="login-tab" onclick="switchLoginTab('register')">Register</button>
+    </div>
+    
+            <div id="login-form" class="login-form active">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="Enter your password">
+                </div>
+                <button class="login-btn" onclick="handleLogin()">Login</button>
+            </div>
+            
+            <div id="register-form" class="login-form">
+                <div class="form-group">
+                    <label for="register-name">Full Name</label>
+                    <input type="text" id="register-name" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" placeholder="Create a password">
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm">Confirm Password</label>
+                    <input type="password" id="register-confirm" placeholder="Confirm your password">
+                </div>
+                <button class="login-btn" onclick="handleRegister()">Register</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Publications Page -->
+    <div id="publications-page" class="publications-page">
+        <div class="publications-header">
+            <button class="publications-close-btn" onclick="closePublicationsPage()">&times;</button>
+            <h1 class="publications-title">Research Publications</h1>
+            <p class="publications-subtitle">Scientific research and publications from the PAMOCPP project</p>
+        </div>
+        
+        <div class="publications-content">
+            <div class="publication-card">
+                <h2>The impact of precipitation, temperature, and soil moisture on wheat yield gap quantification: evidence from Morocco</h2>
+                <div class="publication-meta">Agriculture & Food Security, Volume 13, Article number: 55 (2024)</div>
+                <div class="publication-authors">Lahcen Ousayd, Terence Epule Epule, Salwa Belaqziz, Victor Ongoma, Abdelhakim Amazirh, Abdelghani Chehbouni</div>
+                <div class="publication-summary">
+                    This study quantifies the wheat yield gap in Morocco's five major wheat production regions and analyzes the historical sensitivity of wheat yield to temperature, precipitation, and soil moisture. The research reveals significant regional differences in yield gaps, ranging from 1.64 t/ha in Casablanca Settat to 4.12 t/ha in Marrakech Safi. Wheat yields were found to be strongly correlated with rainfall, particularly from December to March, while temperature fluctuations had significant negative impacts. The study provides crucial insights for evidence-based intervention strategies to enhance yields and achieve food security in Morocco.
+                </div>
+                <a href="https://doi.org/10.1186/s40066-024-00509-w" target="_blank" class="publication-link">
+                    <i class="fas fa-external-link-alt"></i>
+                    View Full Publication
+                </a>
+            </div>
+            
+            <div class="publication-card">
+                <h2>Exploring the key drivers of crop yields in Morocco – a systematic review</h2>
+                <div class="publication-meta">Frontiers in Agronomy, Volume 7 (2025)</div>
+                <div class="publication-authors">Soumia Achli, Victor Ongoma, Terence Epule Epule, Driss Dhiba, Wiam Salih, Lahcen Ousayd, Abdelghani Chehbouni</div>
+                <div class="publication-summary">
+                    This systematic review examines 135 peer-reviewed and grey literature sources published between 1990 and 2024 to identify key drivers influencing crop yields in Morocco, with a focus on grain crops. The study integrates climatic, socio-economic, and biophysical factors, revealing that precipitation emerged as the primary driver of crop yields, with approximately 15.6% of the literature emphasizing its impact. Other significant factors include irrigation, fertilization, water stress, temperature, technical efficiency, soil properties, conservation agriculture, and crop varieties. The findings highlight the intricate dependencies between climatic and agronomic factors affecting Morocco's grain production.
+                </div>
+                <a href="https://doi.org/10.3389/fagro.2025.1515938" target="_blank" class="publication-link">
+                    <i class="fas fa-external-link-alt"></i>
+                    View Full Publication
+                </a>
+            </div>
+            
+            <div class="publication-card">
+                <h2>TEMLI: A High-Resolution Air Temperature Estimation Using Machine Learning and Land Surface Data Across Morocco</h2>
+                <div class="publication-meta">Earth Systems and Environment (2025)</div>
+                <div class="publication-authors">Wiam Salih, El Mahdi EL Khalki, Victor Ongoma, Redouane Lguensat, Bouchra Aithssaine, Hamza Ouatiki, Fatima Driouech, Badreddine Sebbar, Soumia Achli & Abdelghani Chehbouni</div>
+                <div class="publication-summary">
+                    This study presents TEMLI (Temperature Estimation using Machine Learning and Land surface data), a novel approach for high-resolution air temperature estimation across Morocco using machine learning techniques and land surface data. The methodology combines satellite-derived land surface temperature, elevation, vegetation indices, and other environmental variables to provide accurate temperature estimates at fine spatial resolution. The model demonstrates high accuracy in temperature prediction and offers significant potential for agricultural applications, climate monitoring, and environmental research across Morocco's diverse landscapes.
+                </div>
+                <a href="https://doi.org/10.1007/s41748-025-00629-8" target="_blank" class="publication-link">
+                    <i class="fas fa-external-link-alt"></i>
+                    View Full Publication
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="info-panel">
+                <h3><i class="fas fa-chart-line"></i> Summary Statistics</h3>
+                <div id="statistics-summary" style="font-size: 0.9rem;">
+                    <div style="color: #a0a0a0; text-align: center; padding: 20px;">
+                        Select year and metric to view statistics
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h3><i class="fas fa-info-circle"></i> Province Information</h3>
+                <div id="region-info">
+                    <div style="color: #a0a0a0; font-size: 0.9rem; text-align: center; padding: 20px;">
+                        Click on a province to view details
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3><i class="fas fa-chart-bar"></i> Yield Distribution</h3>
+                <canvas id="yieldChart" width="300" height="200"></canvas>
+    </div>
+    
+            <div class="info-panel">
+                <h3><i class="fas fa-layer-group"></i> Map Layers</h3>
+                <div class="boundary-controls">
+                    <label>
+                        <input type="checkbox" id="show-morocco" checked>
+                        <i class="fas fa-flag"></i> Morocco Country Boundary
+                    </label>
+                    <label>
+                        <input type="checkbox" id="show-concerned" checked>
+                        <i class="fas fa-star"></i> Concerned Regions
+                    </label>
+                </div>
+            </div>
+
+
+            <div class="info-panel">
+                <h3><i class="fas fa-tools"></i> Actions</h3>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="exportMapAsPNG()">
+                        <i class="fas fa-image"></i> Export Map (PNG)
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportData()">
+                        <i class="fas fa-download"></i> Export Data (CSV)
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetView()">
+                        <i class="fas fa-sync-alt"></i> Reset View
+                    </button>
+                    <button class="btn btn-secondary" onclick="showHelp()">
+                        <i class="fas fa-question-circle"></i> Help
+                    </button>
+                </div>
+            </div>
+    </div>
+    
+        <div class="map-container">
+    <div id="map"></div>
+            
+            <div class="region-info-panel" id="region-info-panel">
+                <h3 id="region-title">Region Details</h3>
+                <div id="region-details"></div>
+    </div>
+
+            <div class="legend" id="legend">
+                <h4>Yield Scale</h4>
+                <div id="legend-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip" style="display: none;"></div>
+    
+    <script>
+        // Initialize map with dark theme
+        var map = L.map('map', {
+            maxZoom: 18,
+            minZoom: 1,
+            zoomControl: true,
+            attributionControl: false
+        }).setView([31.6295, -7.9811], 5);
+
+        // Add dark base layer
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '',
+            opacity: 0.8
+        }).addTo(map);
+
+        // Data variables
+        var boundaries = [];
+        var yieldData = [];
+        var parcelPoints = [];
+        var currentLayers = [];
+        var boundaryLayers = {
+            morocco: [],
+            concerned: []
+        };
+        var yieldChart = null;
+        var currentMetric = 'actual_yield';
+        var currentView = 'regions';
+
+        // Professional color scales
+        const colorScales = {
+            // Yield levels - green shades (higher is better)
+            actual_yield: ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
+            potential_yield: ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
+            water_limited_yield: ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
+            nutrient_limited_yield: ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
+            unfertilized_yield: ['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d'],
+            // Yield gaps - red shades (higher is worse)
+            yield_gap: ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c'],
+            water_gap: ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c'],
+            nutrient_gap: ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c'],
+            management_gap: ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c'],
+            fertilizer_response_gap: ['#f0f9ff', '#e0f2fe', '#bae6fd', '#7dd3fc', '#38bdf8', '#0ea5e9', '#0284c7', '#0369a1'], // Blue for positive response
+            yield_gap_percent: ['#fef2f2', '#fee2e2', '#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c']
+        };
+
+        // Initialize application
+        initializeApp();
+
+        function initializeApp() {
+            // Ensure checkboxes are checked by default
+            document.getElementById('show-morocco').checked = true;
+            document.getElementById('show-concerned').checked = true;
+            
+            loadCrops();
+            loadYears();
+            loadBoundaries();
+            loadYieldData();
+            loadParcelPoints();
+            initializeChart();
+            setupEventListeners();
+        }
+
+        // Navigation functions
+        function showPublications() {
+            document.getElementById('publications-page').classList.add('active');
+        }
+
+        function showLogin() {
+            document.getElementById('login-panel').classList.add('active');
+        }
+
+        // Panel management functions
+        function closeLoginPanel() {
+            document.getElementById('login-panel').classList.remove('active');
+        }
+
+        function closePublicationsPage() {
+            document.getElementById('publications-page').classList.remove('active');
+        }
+
+        function switchLoginTab(tab) {
+            // Remove active class from all tabs and forms
+            document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
+            
+            // Add active class to selected tab and form
+            document.querySelector(`[onclick="switchLoginTab('${tab}')"]`).classList.add('active');
+            document.getElementById(`${tab}-form`).classList.add('active');
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Simulate login process
+            alert('Login functionality will be implemented with backend integration.\n\nFor now, this is a demonstration of the UI.');
+            closeLoginPanel();
+        }
+
+        function handleRegister() {
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+            
+            if (!name || !email || !password || !confirm) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            if (password !== confirm) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            // Simulate registration process
+            alert('Registration functionality will be implemented with backend integration.\n\nFor now, this is a demonstration of the UI.');
+            closeLoginPanel();
+        }
+
+        // Close panels when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('login-panel')) {
+                closeLoginPanel();
+            }
+            if (e.target.classList.contains('publications-page')) {
+                closePublicationsPage();
+            }
+        });
+
+        // GeoJSON.io satellite view function
+        function openSentinel2View(lat, lng, parcelId) {
+            // Create GeoJSON point for the parcel
+            const parcelGeoJSON = {
+                "type": "Feature",
+                "properties": {
+                    "parcel_id": parcelId,
+                    "coordinates": `${lat}, ${lng}`,
+                    "description": `Parcel ${parcelId} - Agricultural monitoring point`
+                },
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [lng, lat]
+                }
+            };
+            
+            // Encode GeoJSON for URL
+            const encodedGeoJSON = encodeURIComponent(JSON.stringify(parcelGeoJSON));
+            
+            // Open geojson.io with the parcel point and zoom to location
+            const geojsonUrl = `https://geojson.io/#data=data:application/json,${encodedGeoJSON}&map=15/${lat}/${lng}`;
+            window.open(geojsonUrl, '_blank');
+            
+            console.log(`Opening geojson.io for parcel ${parcelId} at coordinates: ${lat}, ${lng}`);
+            console.log('Parcel GeoJSON:', parcelGeoJSON);
+        }
+
+        function setupEventListeners() {
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const view = this.dataset.view;
+                    switchView(view);
+                });
+            });
+
+            // Controls
+            document.getElementById('metric-select').addEventListener('change', function() {
+                currentMetric = this.value;
+                loadYieldData();
+            });
+            
+            document.getElementById('crop-select').addEventListener('change', loadYieldData);
+            document.getElementById('year-select').addEventListener('change', function() {
+                loadYieldData();
+                loadParcelPoints();
+            });
+
+
+            // Boundary visibility
+            document.getElementById('show-morocco').addEventListener('change', updateBoundaryVisibility);
+            document.getElementById('show-concerned').addEventListener('change', updateBoundaryVisibility);
+        }
+
+        function loadCrops() {
+            fetch('/api/crops/')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('crop-select');
+                    // Clear all existing options
+                    select.innerHTML = '';
+                    
+                    // Add unique crops only
+                    const uniqueCrops = [...new Set(data.map(crop => crop.name))];
+                    uniqueCrops.forEach(cropName => {
+                        const option = document.createElement('option');
+                        option.value = cropName;
+                        option.textContent = cropName.charAt(0).toUpperCase() + cropName.slice(1);
+                        if (cropName === 'wheat') option.selected = true;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error loading crops:', error));
+        }
+
+        function loadYears() {
+            const select = document.getElementById('year-select');
+            select.innerHTML = '';
+            
+            // Always show years 2019-2025 regardless of data availability
+            const allYears = [2019, 2020, 2021, 2022, 2023, 2024, 2025];
+            
+            allYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                select.appendChild(option);
+            });
+            
+            // Add Average at the end and set as default
+            const avgOption = document.createElement('option');
+            avgOption.value = 9999;
+            avgOption.textContent = 'Average';
+            avgOption.selected = true;
+            select.appendChild(avgOption);
+            
+            console.log('Loaded years: 2019-2025 + Average');
+        }
+
+
+        function loadBoundaries() {
+            fetch('/api/boundaries/')
+                .then(response => response.json())
+                .then(data => {
+                    boundaries = data;
+                    console.log('Loaded boundaries:', boundaries.length);
+                    console.log('Boundary details:', boundaries.map(b => ({name: b.name, level: b.level, hasGeometry: !!b.geometry_json})));
+                    addBoundaryLayers();
+                })
+                .catch(error => console.error('Error loading boundaries:', error));
+        }
+
+        function addBoundaryLayers() {
+            Object.values(boundaryLayers).forEach(layers => {
+                layers.forEach(layer => map.removeLayer(layer));
+            });
+            boundaryLayers = { morocco: [], concerned: [] };
+
+            console.log('Processing boundaries:', boundaries.length);
+            console.log('Adding boundaries to map...');
+
+            boundaries.forEach(boundary => {
+                console.log('Processing boundary:', boundary.name, 'Level:', boundary.level, 'Has geometry:', !!boundary.geometry_json);
+                
+                if (boundary.geometry_json) {
+                    try {
+                        const geoJson = JSON.parse(boundary.geometry_json);
+                        let layer;
+
+                        if (boundary.level === 'country') {
+                            layer = L.geoJSON(geoJson, {
+                                style: {
+                                    fillColor: 'transparent',
+                                    weight: 2,
+                                    opacity: 1.0,
+                                    color: '#2d5016',
+                                    fillOpacity: 0
+                                }
+                            });
+                            boundaryLayers.morocco.push(layer);
+                            console.log('Added Morocco boundary layer');
+                        } else if (boundary.level === 'province' || boundary.level === 'concerned_region') {
+                            layer = L.geoJSON(geoJson, {
+                                style: {
+                                    fillColor: 'transparent',
+                                    weight: 1,
+                                    opacity: 0.8,
+                                    color: '#a0a0a0',
+                                    fillOpacity: 0
+                                }
+                            });
+                            boundaryLayers.concerned.push(layer);
+                            console.log('Added concerned region layer:', boundary.name);
+                        }
+
+                        if (layer) {
+                            layer.addTo(map);
+                            console.log('Successfully added layer to map for:', boundary.name);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing boundary geometry for', boundary.name, e);
+                    }
+                } else {
+                    console.warn('No geometry for boundary:', boundary.name);
+                }
+            });
+
+            console.log('Morocco layers:', boundaryLayers.morocco.length);
+            console.log('Concerned layers:', boundaryLayers.concerned.length);
+
+            updateBoundaryVisibility();
+        }
+
+        function updateBoundaryVisibility() {
+            const showMorocco = document.getElementById('show-morocco').checked;
+            const showConcerned = document.getElementById('show-concerned').checked;
+
+            console.log('Updating boundary visibility - Morocco:', showMorocco, 'Concerned:', showConcerned);
+            console.log('Morocco layers available:', boundaryLayers.morocco.length);
+            console.log('Concerned layers available:', boundaryLayers.concerned.length);
+
+            // Always ensure boundaries are added to map first
+            boundaryLayers.morocco.forEach(layer => {
+                if (showMorocco) {
+                    if (!map.hasLayer(layer)) {
+                        map.addLayer(layer);
+                        console.log('Added Morocco boundary layer');
+                    }
+                } else {
+                    if (map.hasLayer(layer)) {
+                        map.removeLayer(layer);
+                        console.log('Removed Morocco boundary layer');
+                    }
+                }
+            });
+
+            boundaryLayers.concerned.forEach(layer => {
+                if (showConcerned) {
+                    if (!map.hasLayer(layer)) {
+                        map.addLayer(layer);
+                        console.log('Added concerned region layer');
+                    }
+                } else {
+                    if (map.hasLayer(layer)) {
+                        map.removeLayer(layer);
+                        console.log('Removed concerned region layer');
+                    }
+                }
+            });
+            
+            // Also update yield data layers
+            currentLayers.forEach(layer => {
+                if (showConcerned) {
+                    if (!map.hasLayer(layer)) {
+                        map.addLayer(layer);
+                    }
+                } else {
+                    if (map.hasLayer(layer)) {
+                        map.removeLayer(layer);
+                    }
+                }
+            });
+        }
+
+        function loadYieldData() {
+            const crop = document.getElementById('crop-select').value;
+            const year = document.getElementById('year-select').value;
+
+            let url = `/api/yield-data/?metric=${currentMetric}`;
+            if (crop) url += `&crop=${crop}`;
+            if (year) url += `&year=${year}`;
+
+            console.log('🔄 Loading yield data from:', url);
+            console.log('📊 Filters - Crop:', crop, 'Year:', year, 'Metric:', currentMetric);
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    yieldData = data;
+                    console.log('✅ Loaded yield data:', yieldData.length, 'records');
+                    if (yieldData.length === 0) {
+                        console.warn('⚠️ NO DATA for this year/crop combination!');
+                        console.warn('Try checking if data exists in database for:', {crop, year, metric: currentMetric});
+                    } else {
+                        console.log('📍 Provinces with data:', yieldData.map(d => d.boundary_name).join(', '));
+                    }
+                    updateMap();
+                    updateChart();
+                    updateStatisticsSummary();
+                })
+                .catch(error => console.error('❌ Error loading yield data:', error));
+        }
+
+        function loadParcelPoints() {
+            const year = document.getElementById('year-select').value;
+
+            let url = `/api/parcel-points/`;
+            // Don't filter by year if Average (9999) is selected
+            if (year && year != 9999) url += `?year=${year}`;
+
+            console.log('Loading parcel points from:', url);
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    parcelPoints = data;
+                    console.log('Loaded parcel points:', parcelPoints.length, 'points');
+                    addParcelPointsToMap();
+                })
+                .catch(error => console.error('Error loading parcel points:', error));
+        }
+
+        function addParcelPointsToMap() {
+            // Remove existing parcel point layers
+            currentLayers.forEach(layer => {
+                if (layer.parcelPoint) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Only show parcel points if in parcels view
+            if (currentView !== 'parcels') return;
+
+            console.log('Adding parcel points:', parcelPoints.length, 'points');
+
+            parcelPoints.forEach(parcel => {
+                // Color based on variety
+                let color = '#4ade80'; // Default green
+                if (parcel.variety) {
+                    const varietyColors = {
+                        'Achtar': '#22c55e',
+                        'Arrehane': '#f59e0b', 
+                        'Bandera': '#ef4444',
+                        'Faiza': '#8b5cf6',
+                        'Radia': '#06b6d4'
+                    };
+                    color = varietyColors[parcel.variety] || '#4ade80';
+                }
+
+                // Morocco coordinates: X is likely in degrees West (negative), Y is degrees North
+                // If X > 180 or Y > 90, coordinates are in a projected CRS (meters), not lat/long
+                let lat = parcel.y;
+                let lon = parcel.x;
+                
+                // Check if coordinates are valid (not null/undefined)
+                if (lon === null || lat === null || lon === undefined || lat === undefined) {
+                    console.warn(`Skipping parcel ${parcel.parcel_id}: invalid coordinates (X=${lon}, Y=${lat})`);
+                    return;
+                }
+                
+                // Check if coordinates are in Morocco range (-17° to -1° longitude, 21° to 36° latitude)
+                const isInMorocco = lon >= -17 && lon <= -1 && lat >= 21 && lat <= 36;
+                
+                if (!isInMorocco) {
+                    // Coordinates are not in Morocco, skip this point
+                    console.warn(`Skipping parcel ${parcel.parcel_id}: coordinates not in Morocco range (X=${lon}, Y=${lat})`);
+                    return;
+                }
+                
+                const marker = L.circleMarker([lat, lon], {
+                    radius: 5,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                marker.parcelPoint = true;
+                currentLayers.push(marker);
+
+                marker.bindTooltip(`
+                    <div style="font-family: 'Inter', sans-serif; color: #000; min-width: 200px;">
+                        <strong>${parcel.parcel_id}</strong><br>
+                        Province: ${parcel.province}<br>
+                        Variety: ${parcel.variety}<br>
+                        Year: ${parcel.year}<br>
+                        Yield: ${parcel.yield_per_ha ? parcel.yield_per_ha.toFixed(2) : 'N/A'}
+                    </div>
+                `);
+
+                marker.on('click', function(e) {
+                    // Zoom to parcel location
+                    map.setView([lat, lon], 16, {
+                        animate: true,
+                        duration: 1
+                    });
+                    
+                    // Show parcel info in sidebar
+                    showParcelInfo(parcel);
+                    
+                    // Open Sentinel-2 satellite view automatically
+                    openSentinel2View(parcel.y, parcel.x, parcel.parcel_id);
+                });
+            });
+        }
+
+        function showParcelInfo(parcel) {
+            const panel = document.getElementById('region-info');
+            
+            panel.innerHTML = `
+                <h3>Parcel Details</h3>
+                <div class="info-item">
+                    <span class="info-label">Parcel ID:</span>
+                    <span class="info-value">${parcel.parcel_id}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Province:</span>
+                    <span class="info-value">${parcel.province}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Variety:</span>
+                    <span class="info-value">${parcel.variety}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Year:</span>
+                    <span class="info-value">${parcel.year}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Area:</span>
+                    <span class="info-value">${parcel.area ? parcel.area.toFixed(2) + ' ha' : 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Total Yield:</span>
+                    <span class="info-value">${parcel.yield_total ? parcel.yield_total.toFixed(2) + ' t' : 'N/A'}</span>
+                </div>
+                <div class="info-item" style="background: rgba(74, 222, 128, 0.1); border-radius: 6px; margin-top: 10px;">
+                    <span class="info-label" style="color: #4ade80; font-weight: 600;">Yield per ha:</span>
+                    <span class="info-value" style="color: #4ade80; font-weight: 600;">${parcel.yield_per_ha ? parcel.yield_per_ha.toFixed(2) : 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Coordinates:</span>
+                    <span class="info-value">${parcel.y.toFixed(6)}, ${parcel.x.toFixed(6)}</span>
+                </div>
+            `;
+        }
+
+        function switchView(view) {
+            currentView = view;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-view="${view}"]`).classList.add('active');
+            
+            // Clear map and reload appropriate data
+            updateMap();
+        }
+
+        function updateMap() {
+            currentLayers.forEach(layer => map.removeLayer(layer));
+            currentLayers = [];
+
+            if (currentView === 'regions') {
+                updateRegionMap();
+            } else {
+                addParcelPointsToMap();
+                updateParcelLegend();
+            }
+        }
+
+        function updateRegionMap() {
+            console.log('Updating map with yield data:', yieldData.length, 'records');
+            console.log('Boundaries loaded:', boundaries.length, 'boundaries');
+            console.log('Current metric:', currentMetric);
+
+            if (yieldData.length === 0) {
+                console.log('⚠️ NO YIELD DATA - Run: python manage.py populate_real_data --clear');
+                console.log('Showing province boundaries only (no colors)');
+                updateLegend(currentMetric, 0, 0, colorScales[currentMetric]);
+                return;
+            }
+
+            const values = yieldData.map(d => d.metric_value).filter(v => v !== null);
+            console.log('Valid yield values:', values.length);
+            console.log('Yield values range:', values.length > 0 ? `${Math.min(...values)} to ${Math.max(...values)}` : 'No values');
+
+            if (values.length === 0) {
+                console.log('No valid yield values found');
+                updateLegend(currentMetric, 0, 0, colorScales[currentMetric]);
+                return;
+            }
+
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            console.log('Yield range:', min, 'to', max);
+            console.log('All yield data:', yieldData);
+
+            const colors = colorScales[currentMetric];
+            const getColor = (value) => {
+                if (value === null || value === undefined) return '#e5e7eb'; // Gray for no data
+                const ratio = (value - min) / (max - min);
+                const index = Math.min(Math.floor(ratio * colors.length), colors.length - 1);
+                return colors[index];
+            };
+
+            // Group yield data by region to avoid duplicates
+            const regionData = {};
+            yieldData.forEach(data => {
+                if (data.geometry && data.metric_value !== null) {
+                    const key = `${data.boundary_code}_${data.crop_name}_${data.year}`;
+                    regionData[key] = data;
+                }
+            });
+
+            console.log('Processing', Object.keys(regionData).length, 'unique region-crop-year combinations');
+
+            Object.values(regionData).forEach(data => {
+                console.log('Processing yield data for:', data.boundary_name, 'Geometry:', !!data.geometry, 'Value:', data.metric_value);
+                
+                try {
+                    const geoJson = JSON.parse(data.geometry);
+                    const regionColor = getColor(data.metric_value);
+                    console.log('Adding region to map:', data.boundary_name, 'Color:', regionColor);
+                    
+                    const layer = L.geoJSON(geoJson, {
+                        style: {
+                            fillColor: regionColor,
+                            weight: 2,
+                            opacity: 1,
+                            color: '#ffffff', // White border for visibility on dark background
+                            fillOpacity: 0.75
+                        }
+                    });
+                    
+                    // Always add to map (visibility controlled by checkbox)
+                    layer.addTo(map);
+
+                    layer.on('mouseover', function(e) {
+                        this.setStyle({
+                            weight: 3,
+                            fillOpacity: 0.9,
+                            color: '#ffff00' // Yellow border on hover
+                        });
+                        showTooltip(e.latlng, data);
+                    });
+
+                    layer.on('mouseout', function(e) {
+                        this.setStyle({
+                            weight: 2,
+                            fillOpacity: 0.75,
+                            color: '#ffffff' // White border
+                        });
+                        hideTooltip();
+                    });
+
+                        // No popup - removed as requested
+
+                    layer.on('click', function(e) {
+                        showRegionInfo(data);
+                    });
+
+                    currentLayers.push(layer);
+                    console.log('Successfully added layer for:', data.boundary_name);
+                } catch (e) {
+                    console.error('Error parsing geometry for', data.boundary_name, e);
+                }
+            });
+
+            console.log('Total layers added to map:', currentLayers.length);
+
+            updateLegend(currentMetric, min, max, colors);
+        }
+
+        function showTooltip(latlng, data) {
+            const tooltip = document.getElementById('tooltip');
+            const unit = getMetricUnit();
+            const metricName = document.getElementById('metric-select').selectedOptions[0].text;
+            const yearDisplay = data.year == 9999 ? 'Average' : data.year;
+            
+            // Calculate percentage from potential yield
+            const potentialYield = data.potential_yield || 0;
+            const percentOfPotential = potentialYield > 0 ? (data.metric_value / potentialYield) * 100 : 0;
+            
+            // Determine color based on percentage of potential
+            const barColor = percentOfPotential < 40 ? '#ef4444' : 
+                            percentOfPotential < 70 ? '#f59e0b' : '#22c55e';
+            
+            tooltip.innerHTML = `
+                <div style="font-family: 'Inter', sans-serif; min-width: 220px;">
+                    <div style="font-weight: 700; font-size: 1.1rem; color: #22c55e; margin-bottom: 8px; border-bottom: 2px solid rgba(34, 197, 94, 0.3); padding-bottom: 6px;">
+                        ${data.boundary_name}
+                    </div>
+                    <div style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 10px;">
+                        ${data.crop_name} | ${yearDisplay}
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <div style="font-size: 0.8rem; color: #64748b; margin-bottom: 4px;">${metricName}</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="font-size: 1.4rem; font-weight: 700; color: #fff;">${data.metric_value.toFixed(2)}</div>
+                            <div style="font-size: 0.9rem; color: #94a3b8;">${unit}</div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 8px;">
+                        <div style="background: ${barColor}; height: 100%; width: ${percentOfPotential}%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; text-align: center;">
+                        ${percentOfPotential.toFixed(0)}% of potential yield
+                    </div>
+                </div>
+            `;
+            
+            // Convert lat/lng to screen pixel coordinates
+            const point = map.latLngToContainerPoint(latlng);
+            
+            tooltip.style.display = 'block';
+            tooltip.style.left = (point.x + 15) + 'px';  // 15px offset to right
+            tooltip.style.top = (point.y - 10) + 'px';   // 10px offset up
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').style.display = 'none';
+        }
+
+        function getMetricUnit() {
+            if (currentMetric.includes('percent')) {
+                return '%';
+            }
+            return 't/ha';
+        }
+
+        function updateLegend(metric, min, max, colors) {
+            const legend = document.getElementById('legend');
+            const content = document.getElementById('legend-content');
+
+            content.innerHTML = '';
+
+            const steps = 8;
+            // Reverse the order: highest value at top, lowest at bottom
+            for (let i = steps - 1; i >= 0; i--) {
+                const value = min + (max - min) * (i / (steps - 1));
+                const colorIndex = Math.floor(i / (steps - 1) * (colors.length - 1));
+                const color = colors[colorIndex];
+
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-color" style="background-color: ${color}"></div>
+                    <span>${value.toFixed(1)}</span>
+                `;
+                content.appendChild(item);
+            }
+
+            const legendTitle = legend.querySelector('h4');
+            const metricNames = {
+                // Yield levels
+                'actual_yield': 'Actual Yield (t/ha)',
+                'potential_yield': 'Potential Yield (t/ha)',
+                'water_limited_yield': 'Water Limited Yield (t/ha)',
+                'nutrient_limited_yield': 'Nutrient Limited Yield (t/ha)',
+                'unfertilized_yield': 'Unfertilized Yield (t/ha)',
+                // Yield gaps
+                'yield_gap': 'Total Exploitable Gap (t/ha)',
+                'water_gap': 'Water Limitation Gap (t/ha)',
+                'nutrient_gap': 'Nutrient Limitation Gap (t/ha)',
+                'management_gap': 'Management Gap (t/ha)',
+                'fertilizer_response_gap': 'Fertilizer Response Gap (t/ha)',
+                'yield_gap_percent': 'Yield Gap (%)'
+            };
+            legendTitle.textContent = metricNames[metric] || metric.replace(/_/g, ' ').toUpperCase();
+
+            legend.style.display = 'block';
+        }
+
+        function updateParcelLegend() {
+            const legend = document.getElementById('legend');
+            const content = document.getElementById('legend-content');
+            const legendTitle = legend.querySelector('h4');
+
+            legendTitle.textContent = 'Wheat Varieties';
+            content.innerHTML = `
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #22c55e"></div>
+                    <span>Achtar</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #f59e0b"></div>
+                    <span>Arrehane</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ef4444"></div>
+                    <span>Bandera</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #8b5cf6"></div>
+                    <span>Faiza</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #06b6d4"></div>
+                    <span>Radia</span>
+                </div>
+            `;
+
+            legend.style.display = 'block';
+        }
+
+        function showRegionInfo(data) {
+            const panel = document.getElementById('region-info');
+            const yearDisplay = data.year === 9999 ? 'Average' : data.year;
+            
+            panel.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Province:</span>
+                    <span class="info-value">${data.boundary_name}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Year:</span>
+                    <span class="info-value">${yearDisplay}</span>
+                </div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(74, 222, 128, 0.2);">
+                    <div style="font-weight: 600; color: #4ade80; margin-bottom: 10px;">Yield Levels (t/ha)</div>
+                    <div class="info-item">
+                        <span class="info-label">Potential:</span>
+                        <span class="info-value">${data.potential_yield ? data.potential_yield.toFixed(2) : 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Water Limited:</span>
+                        <span class="info-value">${data.water_limited_yield ? data.water_limited_yield.toFixed(2) : 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Nutrient Limited:</span>
+                        <span class="info-value">${data.nutrient_limited_yield ? data.nutrient_limited_yield.toFixed(2) : 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Actual/Observed:</span>
+                        <span class="info-value">${data.actual_yield ? data.actual_yield.toFixed(2) : 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Unfertilized:</span>
+                        <span class="info-value">${data.unfertilized_yield ? data.unfertilized_yield.toFixed(2) : 'N/A'}</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(239, 68, 68, 0.2);">
+                    <div style="font-weight: 600; color: #ef4444; margin-bottom: 10px;">Yield Gap Decomposition (t/ha)</div>
+                    <div class="info-item">
+                        <span class="info-label">Total Exploitable Gap:</span>
+                        <span class="info-value">${data.yield_gap ? data.yield_gap.toFixed(2) : 'N/A'} (${data.yield_gap_percent ? data.yield_gap_percent.toFixed(1) + '%' : 'N/A'})</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Water Limitation Gap:</span>
+                        <span class="info-value">${data.water_gap ? data.water_gap.toFixed(2) : 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Nutrient Limitation Gap:</span>
+                        <span class="info-value">${data.nutrient_gap ? data.nutrient_gap.toFixed(2) : 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Management Gap:</span>
+                        <span class="info-value">${data.management_gap ? data.management_gap.toFixed(2) : 'N/A'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Fertilizer Response Gap:</span>
+                        <span class="info-value">${data.fertilizer_response_gap ? data.fertilizer_response_gap.toFixed(2) : 'N/A'}</span>
+                    </div>
+                </div>
+                
+                <div class="info-item" style="background: rgba(74, 222, 128, 0.1); border-radius: 6px; margin-top: 15px;">
+                    <span class="info-label" style="color: #4ade80; font-weight: 600;">Selected Metric:</span>
+                    <span class="info-value" style="color: #4ade80; font-weight: 600;">${data.metric_value ? data.metric_value.toFixed(2) + ' ' + getMetricUnit() : 'N/A'}</span>
+                </div>
+            `;
+        }
+
+
+        function initializeChart() {
+            const ctx = document.getElementById('yieldChart').getContext('2d');
+            yieldChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Yield',
+                        data: [],
+                        backgroundColor: '#4ade80',
+                        borderColor: '#22c55e',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#a0a0a0',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#a0a0a0',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (!yieldChart) return;
+
+            const crop = document.getElementById('crop-select').value;
+            const year = document.getElementById('year-select').value;
+
+            let chartData = yieldData;
+            if (crop) chartData = chartData.filter(d => d.crop_name === crop);
+            if (year) chartData = chartData.filter(d => d.year == year);
+
+            const regionData = {};
+            chartData.forEach(d => {
+                if (!regionData[d.boundary_name]) {
+                    regionData[d.boundary_name] = [];
+                }
+                regionData[d.boundary_name].push(d.metric_value);
+            });
+
+            const labels = Object.keys(regionData);
+            const data = labels.map(region => {
+                const values = regionData[region];
+                return values.reduce((a, b) => a + b, 0) / values.length;
+            });
+
+            yieldChart.data.labels = labels;
+            yieldChart.data.datasets[0].data = data;
+            yieldChart.data.datasets[0].label = currentMetric.replace('_', ' ').toUpperCase();
+            yieldChart.update();
+        }
+
+        function updateStatisticsSummary() {
+            const summaryDiv = document.getElementById('statistics-summary');
+            
+            if (!yieldData || yieldData.length === 0) {
+                summaryDiv.innerHTML = '<div style="color: #a0a0a0; text-align: center; padding: 20px;">No data available</div>';
+                return;
+            }
+            
+            // Get metric values
+            const values = yieldData
+                .map(d => d.metric_value)
+                .filter(v => v !== null && v !== undefined && !isNaN(v));
+            
+            if (values.length === 0) {
+                summaryDiv.innerHTML = '<div style="color: #a0a0a0; text-align: center; padding: 20px;">No valid data</div>';
+                return;
+            }
+            
+            // Calculate statistics
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const sum = values.reduce((a, b) => a + b, 0);
+            const mean = sum / values.length;
+            const sortedValues = [...values].sort((a, b) => a - b);
+            const median = sortedValues.length % 2 === 0
+                ? (sortedValues[sortedValues.length / 2 - 1] + sortedValues[sortedValues.length / 2]) / 2
+                : sortedValues[Math.floor(sortedValues.length / 2)];
+            
+            // Calculate standard deviation
+            const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+            const stdDev = Math.sqrt(variance);
+            
+            // Get metric info
+            const metricSelect = document.getElementById('metric-select');
+            const metricName = metricSelect.selectedOptions[0].text;
+            const unit = currentMetric.includes('percent') ? '%' : 't/ha';
+            
+            const yearSelect = document.getElementById('year-select');
+            const yearDisplay = yearSelect.value == 9999 ? 'Average' : yearSelect.value;
+            
+            summaryDiv.innerHTML = `
+                <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%); 
+                            padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 3px solid #22c55e;">
+                    <div style="font-weight: 600; color: #22c55e; margin-bottom: 8px;">
+                        <i class="fas fa-chart-bar"></i> ${metricName} (${yearDisplay})
+                    </div>
+                    <div style="font-size: 0.85rem; color: #94a3b8;">
+                        ${values.length} provinces analyzed
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Min</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #ef4444;">${min.toFixed(2)}</div>
+                        <div style="font-size: 0.75rem; color: #64748b;">${unit}</div>
+                    </div>
+                    <div style="background: rgba(34, 197, 94, 0.1); padding: 10px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Max</div>
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #22c55e;">${max.toFixed(2)}</div>
+                        <div style="font-size: 0.75rem; color: #64748b;">${unit}</div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #94a3b8; font-size: 0.85rem;">Mean:</span>
+                        <span style="color: #3b82f6; font-weight: 600;">${mean.toFixed(2)} ${unit}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #94a3b8; font-size: 0.85rem;">Median:</span>
+                        <span style="color: #3b82f6; font-weight: 600;">${median.toFixed(2)} ${unit}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #94a3b8; font-size: 0.85rem;">Std Dev:</span>
+                        <span style="color: #3b82f6; font-weight: 600;">${stdDev.toFixed(2)} ${unit}</span>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(168, 85, 247, 0.1); padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px;">Range</div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: #a855f7;">${(max - min).toFixed(2)} ${unit}</div>
+                </div>
+            `;
+        }
+
+        function exportData() {
+            const crop = document.getElementById('crop-select').value;
+            const year = document.getElementById('year-select').value;
+
+            let url = '/api/export-csv/';
+            const params = [];
+            if (crop) params.push(`crop=${crop}`);
+            if (year && year != 9999) params.push(`year=${year}`);
+            if (params.length > 0) url += '?' + params.join('&');
+
+            window.open(url, '_blank');
+        }
+
+        function exportMapAsPNG() {
+            const year = document.getElementById('year-select').value;
+            const yearDisplay = year == 9999 ? 'Average' : year;
+            const metric = document.getElementById('metric-select').value;
+            const metricName = document.getElementById('metric-select').selectedOptions[0].text;
+            const fileName = `Morocco_YieldGap_${metricName.replace(/[^a-zA-Z0-9]/g, '_')}_${yearDisplay}.png`;
+            
+            // Show notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed; top: 80px; right: 20px; z-index: 10000;
+                background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+                color: white; padding: 15px 25px; border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-weight: 600;
+            `;
+            notification.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting map...';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                const mapElement = document.getElementById('map');
+                
+                html2canvas(mapElement, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,  // Higher quality
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: false
+                }).then(canvas => {
+                    // Convert to blob and download
+                    canvas.toBlob(function(blob) {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.download = fileName;
+                        link.href = url;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        
+                        notification.innerHTML = '<i class="fas fa-check"></i> Map exported successfully!';
+                        notification.style.background = '#22c55e';
+                        setTimeout(() => notification.remove(), 2000);
+                    }, 'image/png');
+                }).catch(error => {
+                    console.error('Export error:', error);
+                    notification.innerHTML = '<i class="fas fa-times"></i> Export failed. Use Ctrl+P to print';
+                    notification.style.background = '#ef4444';
+                    setTimeout(() => notification.remove(), 3000);
+                });
+            }, 500);
+        }
+
+        function resetView() {
+            map.setView([33.0, -7.0], 6);
+            document.getElementById('year-select').value = '9999';
+            currentMetric = 'actual_yield';
+            document.getElementById('metric-select').value = 'actual_yield';
+            loadYieldData();
+        }
+
+        function resetToDefaults() {
+            // Reset map view
+            map.setView([33.0, -7.0], 6);
+            
+            // Reset to default selections
+            document.getElementById('year-select').value = '9999'; // Average
+            document.getElementById('metric-select').value = 'actual_yield';
+            document.getElementById('crop-select').value = 'wheat';
+            currentMetric = 'actual_yield';
+            currentView = 'regions';
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('[data-view="regions"]').classList.add('active');
+            
+            // Reset checkboxes
+            document.getElementById('show-morocco').checked = true;
+            document.getElementById('show-concerned').checked = true;
+            
+            // Reload data
+            loadYieldData();
+            
+            console.log('🏠 Reset to defaults: Average year, Actual Yield, Wheat, Regions view');
+        }
+
+        function showHelp() {
+            const helpContent = `
+                <div style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+                    <h2 style="color: #22c55e; margin-top: 0;">
+                        <i class="fas fa-info-circle"></i> Morocco Yield Gap Analysis - User Guide
+                    </h2>
+                    
+                    <h3 style="color: #4ade80; margin-top: 20px;">📊 Yield Levels (Green Scale)</h3>
+                    <ul style="line-height: 1.8;">
+                        <li><strong>Actual Yield (Ya):</strong> Observed farmer yields from field measurements</li>
+                        <li><strong>Potential Yield (Yp):</strong> Maximum achievable yield under optimal conditions</li>
+                        <li><strong>Water Limited Yield (Yw):</strong> Yield under rainfall/irrigation constraints</li>
+                        <li><strong>Nutrient Limited Yield:</strong> Yield with optimal nutrient management</li>
+                        <li><strong>Unfertilized Yield (Ynf):</strong> Baseline yield without fertilizer inputs</li>
+                    </ul>
+                    
+                    <h3 style="color: #ef4444; margin-top: 20px;">📉 Yield Gap Components (Red Scale)</h3>
+                    <ul style="line-height: 1.8;">
+                        <li><strong>Total Exploitable Gap (Yp - Ya):</strong> Overall difference between potential and actual</li>
+                        <li><strong>Water Limitation Gap (Yp - Yw):</strong> Yield losses due to water constraints</li>
+                        <li><strong>Nutrient Limitation Gap (Yw - Ynutrient):</strong> Losses from nutrient deficiency</li>
+                        <li><strong>Management Gap (Ynutrient - Ya):</strong> Losses from farm management practices</li>
+                        <li><strong>Fertilizer Response Gap (Ya - Ynf):</strong> Benefit from current fertilization</li>
+                        <li><strong>Yield Gap %:</strong> Percentage of potential not achieved</li>
+                    </ul>
+                    
+                    <h3 style="color: #3b82f6; margin-top: 20px;">🗺️ How to Use</h3>
+                    <ol style="line-height: 1.8;">
+                        <li><strong>Select Year:</strong> Choose 2019, 2020, 2021, or Average (default)</li>
+                        <li><strong>Select Metric:</strong> Choose from yield levels or gap components</li>
+                        <li><strong>Click Provinces:</strong> View detailed statistics for each province</li>
+                        <li><strong>Export:</strong> Save map as PNG or download data as CSV</li>
+                        <li><strong>Toggle Layers:</strong> Show/hide administrative boundaries and parcels</li>
+                    </ol>
+                    
+                    <h3 style="color: #a855f7; margin-top: 20px;">💡 Tips</h3>
+                    <ul style="line-height: 1.8;">
+                        <li>All values are in <strong>t/ha</strong> (tons per hectare)</li>
+                        <li>Green colors indicate yields (higher is better)</li>
+                        <li>Red colors indicate gaps (lower is better)</li>
+                        <li>Use "Average" year for overall trends across 2019-2025</li>
+                        <li>Export PNG for presentations, CSV for detailed analysis</li>
+                        <li>Click on provinces to see detailed statistics</li>
+                        <li>Click on parcel points to zoom in</li>
+                    </ul>
+                    
+                    <h3 style="color: #f59e0b; margin-top: 20px;">📚 Data Source</h3>
+                    <p style="line-height: 1.6; font-size: 0.9rem;">
+                        Lahcen, O., et al. (2026). Process-based assessment of wheat yield gap in Mediterranean rainfed conditions: 
+                        cultivar, nutrient, and sowing optimization. <em>European Journal of Agronomy</em>.
+                    </p>
+                </div>
+            `;
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); z-index: 10000;
+                display: flex; align-items: center; justify-content: center;
+                animation: fadeIn 0.2s;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                color: white; border-radius: 12px; max-width: 800px;
+                width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                position: relative; border: 1px solid rgba(34, 197, 94, 0.2);
+            `;
+            
+            modalContent.innerHTML = helpContent + `
+                <div style="text-align: center; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <button onclick="this.closest('[style*=fixed]').remove()" 
+                            style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+                                   color: white; border: none; padding: 12px 30px;
+                                   border-radius: 6px; cursor: pointer; font-weight: 600;
+                                   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);">
+                        <i class="fas fa-check"></i> Got it!
+                    </button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
+        // Hide info panel when clicking on map
+        map.on('click', function(e) {
+            document.getElementById('region-info-panel').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
