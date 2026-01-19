@@ -6,7 +6,7 @@ services:
     env: python
     plan: free
     # Robust build command: Upgrade tools first, then install with no build isolation
-    buildCommand: python -m pip install --upgrade --force-reinstall "pip>=24.0" "setuptools>=70.0" "wheel>=0.43" && python -m pip install --no-build-isolation --only-binary :all: -r requirements.txt && cd WebAppYG && python manage.py migrate && python manage.py collectstatic --noinput
+    buildCommand: python -m pip install --upgrade --force-reinstall "pip>=24.0" "setuptools>=70.0" "wheel>=0.43" && python -m pip install --only-binary=:all: --prefer-binary -r requirements.txt && cd WebAppYG && python manage.py migrate && python manage.py collectstatic --noinput
     startCommand: cd WebAppYG && gunicorn yg_ma.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: DEBUG
