@@ -5,7 +5,7 @@ services:
     name: yield-gap-app
     env: python
     plan: free
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r WebAppYG/requirements_minimal.txt && cd WebAppYG && python manage.py collectstatic --noinput
+    buildCommand: chmod +x build.sh && ./build.sh
     startCommand: cd WebAppYG && gunicorn yg_ma.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
