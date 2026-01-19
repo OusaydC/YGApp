@@ -3,13 +3,9 @@ services:
   web:
     type: web
     name: yield-gap-app
-    env: python
+    dockerfilePath: ./Dockerfile
     plan: free
-    buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: cd WebAppYG && gunicorn yg_ma.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.4
       - key: DEBUG
         value: False
       - key: ALLOWED_HOSTS
