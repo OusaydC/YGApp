@@ -91,15 +91,16 @@ $RECYCLE.BIN/
 # *.csv
 # /data/
 
-# Keep data structure but exclude large files
-WebAppYG/data/*.xlsx
-WebAppYG/data/*.csv
-WebAppYG/data/Shapefiles/*.shp
-WebAppYG/data/Shapefiles/*.shx
-WebAppYG/data/Shapefiles/*.dbf
-WebAppYG/data/Shapefiles/*.prj
-WebAppYG/data/Shapefiles/*.cpg
+# Data files - INCLUDE them for deployment (needed for Render)
+# Uncomment below if you want to exclude large data files from git
+# WebAppYG/data/*.xlsx
+# WebAppYG/data/*.csv
+# WebAppYG/data/Shapefiles/*.shp
+# WebAppYG/data/Shapefiles/*.shx
+# WebAppYG/data/Shapefiles/*.dbf
+# WebAppYG/data/Shapefiles/*.prj
+# WebAppYG/data/Shapefiles/*.cpg
 
-# But keep documentation
+# Keep documentation
 !WebAppYG/data/*.md
 
