@@ -1,0 +1,20 @@
+version: '1'
+services:
+  web:
+    type: web
+    name: yield-gap-app
+    env: python
+    plan: free
+    buildCommand: python -m pip install --upgrade pip setuptools wheel && pip install -r WebAppYG/requirements.txt && cd WebAppYG && python manage.py collectstatic --noinput
+    startCommand: cd WebAppYG && gunicorn yg_ma.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: your-app-name.onrender.com
+      - key: SECRET_KEY
+        generateValue: true
+    healthCheckPath: /
+
