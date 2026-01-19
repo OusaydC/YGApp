@@ -27,10 +27,10 @@ django-debug-toolbar==4.2.0
 gunicorn==21.2.0
 whitenoise==6.5.0
 
-# Data processing
-pandas==2.0.3
-geopandas==0.13.2
-numpy==1.24.3
+# Data processing (Python 3.13 compatible - using newer versions with pre-built wheels)
+pandas>=2.2.0
+geopandas>=0.14.0
+numpy>=1.26.4
 openpyxl==3.1.2
 
 # API filtering
