@@ -5,7 +5,7 @@ services:
     name: yield-gap-app
     env: python
     plan: free
-    buildCommand: python -m pip install --upgrade "pip>=24.0" "setuptools>=70.0" "wheel>=0.43" && pip install -r WebAppYG/requirements.txt && cd WebAppYG && python manage.py collectstatic --noinput
+    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r WebAppYG/requirements.txt && cd WebAppYG && python manage.py migrate && python manage.py collectstatic --noinput
     startCommand: cd WebAppYG && gunicorn yg_ma.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: DEBUG
@@ -15,4 +15,3 @@ services:
       - key: SECRET_KEY
         generateValue: true
     healthCheckPath: /
-

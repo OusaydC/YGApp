@@ -1023,50 +1023,31 @@
             to { opacity: 1; }
         }
 
-        /* Print styles for easy export */
+        /* Print styles - only used if user manually prints */
         @media print {
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            .sidebar, .header, .info-panel, #region-info-panel {
+            .sidebar, .header {
                 display: none !important;
             }
             #map {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100vw !important;
-                height: 100vh !important;
-                margin: 0 !important;
-                padding: 0 !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
             }
             .legend {
                 position: fixed !important;
-                right: 30px !important;
-                bottom: 30px !important;
+                right: 20px !important;
+                bottom: 20px !important;
                 display: block !important;
                 background: white !important;
                 color: black !important;
-                border: 3px solid #333 !important;
-                padding: 20px !important;
+                border: 2px solid #333 !important;
+                padding: 15px !important;
                 z-index: 10000 !important;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-            }
-            .legend h4 {
-                color: #333 !important;
-                font-size: 18px !important;
-                margin-bottom: 15px !important;
             }
             .legend-color {
                 border: 1px solid #666 !important;
-                width: 30px !important;
-                height: 20px !important;
-            }
-            .legend-item {
-                margin: 8px 0 !important;
-                font-size: 14px !important;
-                color: #333 !important;
             }
         }
 
@@ -1252,7 +1233,7 @@
                         </div>
                     </div>
                     <div class="header-nav">
-                        <a href="#" class="nav-btn" onclick="resetToDefaults(); return false;">
+                        <a href="#" class="nav-btn">
                             <span>Home</span>
                         </a>
                         <a href="#" class="nav-btn">
@@ -1558,6 +1539,23 @@
             loadParcelPoints();
             initializeChart();
             setupEventListeners();
+            
+            // Ensure boundaries are visible after initialization
+            setTimeout(() => {
+                console.log('Initialization timeout - forcing boundary display');
+                updateBoundaryVisibility();
+                
+                // Double-check boundaries are visible
+                setTimeout(() => {
+                    console.log('✓ Morocco boundary layers:', boundaryLayers.morocco.filter(l => map.hasLayer(l)).length);
+                    console.log('✓ Province boundary layers:', boundaryLayers.concerned.filter(l => map.hasLayer(l)).length);
+                    console.log('✓ Total boundaries loaded:', boundaries.length);
+                    
+                    if (boundaries.length > 0 && boundaryLayers.concerned.length === 0) {
+                        console.warn('⚠️ Provinces not showing - check boundary levels');
+                    }
+                }, 200);
+            }, 500);
         }
 
         // Navigation functions
@@ -1709,27 +1707,26 @@
         }
 
         function loadYears() {
-            const select = document.getElementById('year-select');
-            select.innerHTML = '';
-            
-            // Always show years 2019-2025 regardless of data availability
-            const allYears = [2019, 2020, 2021, 2022, 2023, 2024, 2025];
-            
-            allYears.forEach(year => {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                select.appendChild(option);
-            });
-            
-            // Add Average at the end and set as default
-            const avgOption = document.createElement('option');
-            avgOption.value = 9999;
-            avgOption.textContent = 'Average';
-            avgOption.selected = true;
-            select.appendChild(avgOption);
-            
-            console.log('Loaded years: 2019-2025 + Average');
+            fetch('/api/years/')
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('year-select');
+                    // Clear existing options
+                    select.innerHTML = '';
+                    
+                    // Add unique years only
+                    const uniqueYears = [...new Set(data)].sort((a, b) => a - b);
+                    uniqueYears.forEach(year => {
+                        const option = document.createElement('option');
+                        option.value = year;
+                        // Show "Average" instead of 9999
+                        option.textContent = year === 9999 ? 'Average' : year;
+                        // Set Average as default
+                        if (year === 9999) option.selected = true;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error loading years:', error));
         }
 
 
@@ -1802,6 +1799,21 @@
 
             console.log('Morocco layers:', boundaryLayers.morocco.length);
             console.log('Concerned layers:', boundaryLayers.concerned.length);
+            
+            // Force immediate boundary display
+            boundaryLayers.morocco.forEach(layer => {
+                if (!map.hasLayer(layer)) {
+                    map.addLayer(layer);
+                    console.log('Force added Morocco boundary layer');
+                }
+            });
+            
+            boundaryLayers.concerned.forEach(layer => {
+                if (!map.hasLayer(layer)) {
+                    map.addLayer(layer);
+                    console.log('Force added concerned region layer');
+                }
+            });
 
             updateBoundaryVisibility();
         }
@@ -1865,25 +1877,19 @@
             if (crop) url += `&crop=${crop}`;
             if (year) url += `&year=${year}`;
 
-            console.log('🔄 Loading yield data from:', url);
-            console.log('📊 Filters - Crop:', crop, 'Year:', year, 'Metric:', currentMetric);
+            console.log('Loading yield data from:', url);
 
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     yieldData = data;
-                    console.log('✅ Loaded yield data:', yieldData.length, 'records');
-                    if (yieldData.length === 0) {
-                        console.warn('⚠️ NO DATA for this year/crop combination!');
-                        console.warn('Try checking if data exists in database for:', {crop, year, metric: currentMetric});
-                    } else {
-                        console.log('📍 Provinces with data:', yieldData.map(d => d.boundary_name).join(', '));
-                    }
+                    console.log('Loaded yield data:', yieldData.length, 'records');
+                    console.log('Yield data details:', yieldData.map(d => ({boundary: d.boundary_name, metric: d.metric, value: d.metric_value})));
                     updateMap();
                     updateChart();
                     updateStatisticsSummary();
                 })
-                .catch(error => console.error('❌ Error loading yield data:', error));
+                .catch(error => console.error('Error loading yield data:', error));
         }
 
         function loadParcelPoints() {
@@ -1975,12 +1981,6 @@
                 `);
 
                 marker.on('click', function(e) {
-                    // Zoom to parcel location
-                    map.setView([lat, lon], 16, {
-                        animate: true,
-                        duration: 1
-                    });
-                    
                     // Show parcel info in sidebar
                     showParcelInfo(parcel);
                     
@@ -2060,6 +2060,17 @@
             console.log('Boundaries loaded:', boundaries.length, 'boundaries');
             console.log('Current metric:', currentMetric);
 
+            // Always show boundaries first
+            addBoundaryLayers();
+            
+            // Force boundary visibility update - show provinces by default
+            setTimeout(() => {
+                // Ensure provinces are visible
+                document.getElementById('show-concerned').checked = true;
+                document.getElementById('show-morocco').checked = true;
+                updateBoundaryVisibility();
+            }, 100);
+
             if (yieldData.length === 0) {
                 console.log('⚠️ NO YIELD DATA - Run: python manage.py populate_real_data --clear');
                 console.log('Showing province boundaries only (no colors)');
@@ -2112,10 +2123,10 @@
                     const layer = L.geoJSON(geoJson, {
                         style: {
                             fillColor: regionColor,
-                            weight: 2,
-                            opacity: 1,
-                            color: '#ffffff', // White border for visibility on dark background
-                            fillOpacity: 0.75
+                            weight: 1,
+                            opacity: 0.8,
+                            color: '#a0a0a0', // Gray border
+                            fillOpacity: 0.8
                         }
                     });
                     
@@ -2124,18 +2135,18 @@
 
                     layer.on('mouseover', function(e) {
                         this.setStyle({
-                            weight: 3,
+                            weight: 2,
                             fillOpacity: 0.9,
-                            color: '#ffff00' // Yellow border on hover
+                            color: '#666666' // Darker gray on hover
                         });
                         showTooltip(e.latlng, data);
                     });
 
                     layer.on('mouseout', function(e) {
                         this.setStyle({
-                            weight: 2,
-                            fillOpacity: 0.75,
-                            color: '#ffffff' // White border
+                            weight: 1,
+                            fillOpacity: 0.8,
+                            color: '#a0a0a0' // Gray border
                         });
                         hideTooltip();
                     });
@@ -2164,13 +2175,16 @@
             const metricName = document.getElementById('metric-select').selectedOptions[0].text;
             const yearDisplay = data.year == 9999 ? 'Average' : data.year;
             
-            // Calculate percentage from potential yield
-            const potentialYield = data.potential_yield || 0;
-            const percentOfPotential = potentialYield > 0 ? (data.metric_value / potentialYield) * 100 : 0;
+            // Calculate percentage relative to max in dataset
+            const allValues = yieldData.map(d => d.metric_value).filter(v => v !== null);
+            const maxValue = Math.max(...allValues);
+            const percentage = maxValue > 0 ? (data.metric_value / maxValue) * 100 : 0;
             
-            // Determine color based on percentage of potential
-            const barColor = percentOfPotential < 40 ? '#ef4444' : 
-                            percentOfPotential < 70 ? '#f59e0b' : '#22c55e';
+            // Determine color based on metric type
+            const isGap = currentMetric.includes('gap') || currentMetric.includes('limitation');
+            const barColor = isGap 
+                ? (percentage < 33 ? '#22c55e' : percentage < 66 ? '#f59e0b' : '#ef4444')
+                : (percentage < 33 ? '#ef4444' : percentage < 66 ? '#f59e0b' : '#22c55e');
             
             tooltip.innerHTML = `
                 <div style="font-family: 'Inter', sans-serif; min-width: 220px;">
@@ -2188,20 +2202,16 @@
                         </div>
                     </div>
                     <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 8px;">
-                        <div style="background: ${barColor}; height: 100%; width: ${percentOfPotential}%; transition: width 0.3s ease;"></div>
+                        <div style="background: ${barColor}; height: 100%; width: ${percentage}%; transition: width 0.3s ease;"></div>
                     </div>
-                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; text-align: center;">
-                        ${percentOfPotential.toFixed(0)}% of potential yield
+                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px; text-align: right;">
+                        ${percentage.toFixed(0)}% of max
                     </div>
                 </div>
             `;
-            
-            // Convert lat/lng to screen pixel coordinates
-            const point = map.latLngToContainerPoint(latlng);
-            
             tooltip.style.display = 'block';
-            tooltip.style.left = (point.x + 15) + 'px';  // 15px offset to right
-            tooltip.style.top = (point.y - 10) + 'px';   // 10px offset up
+            tooltip.style.left = (latlng.lng + 0.1) + 'px';
+            tooltip.style.top = (latlng.lat - 0.1) + 'px';
         }
 
         function hideTooltip() {
@@ -2545,9 +2555,8 @@
             const yearDisplay = year == 9999 ? 'Average' : year;
             const metric = document.getElementById('metric-select').value;
             const metricName = document.getElementById('metric-select').selectedOptions[0].text;
-            const fileName = `Morocco_YieldGap_${metricName.replace(/[^a-zA-Z0-9]/g, '_')}_${yearDisplay}.png`;
             
-            // Show notification
+            // Show loading notification
             const notification = document.createElement('div');
             notification.style.cssText = `
                 position: fixed; top: 80px; right: 20px; z-index: 10000;
@@ -2555,21 +2564,153 @@
                 color: white; padding: 15px 25px; border-radius: 8px;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-weight: 600;
             `;
-            notification.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting map...';
+            notification.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing map export...';
             document.body.appendChild(notification);
             
             setTimeout(() => {
-                const mapElement = document.getElementById('map');
+                const fileName = `Morocco_YieldGap_${metricName.replace(/[^a-zA-Z0-9]/g, '_')}_${yearDisplay}.png`;
                 
-                html2canvas(mapElement, {
-                    backgroundColor: '#ffffff',
-                    scale: 2,  // Higher quality
-                    logging: false,
-                    useCORS: true,
-                    allowTaint: false
-                }).then(canvas => {
+                // Get Morocco bounds and calculate pixel coordinates
+                const bounds = map.getBounds();
+                const moroccoBounds = L.latLngBounds(
+                    L.latLng(21, -17),  // Southwest corner
+                    L.latLng(36, -1)    // Northeast corner
+                );
+                
+                // Use leaflet-image to capture the map
+                leafletImage(map, function(err, canvas) {
+                    if (err) {
+                        console.error('Export error:', err);
+                        notification.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Using alternative export method...';
+                        notification.style.background = '#f59e0b';
+                        // Fallback to simpler method
+                        setTimeout(() => {
+                            html2canvas(document.getElementById('map')).then(canvas => {
+                                processCanvas(canvas);
+                            }).catch(() => {
+                                notification.innerHTML = '<i class="fas fa-times"></i> Export failed. Use Print (Ctrl+P)';
+                                notification.style.background = '#ef4444';
+                                setTimeout(() => notification.remove(), 3000);
+                            });
+                        }, 500);
+                        return;
+                    }
+                    
+                    processCanvas(canvas);
+                });
+                
+                function processCanvas(mapCanvas) {
+                    // Calculate crop bounds based on Morocco coordinates
+                    const mapSize = map.getSize();
+                    const nw = map.latLngToContainerPoint(moroccoBounds.getNorthWest());
+                    const se = map.latLngToContainerPoint(moroccoBounds.getSouthEast());
+                    
+                    // Add padding around Morocco
+                    const padding = 40;
+                    const cropX = Math.max(0, nw.x - padding);
+                    const cropY = Math.max(0, nw.y - padding);
+                    const cropWidth = Math.min(mapCanvas.width - cropX, se.x - nw.x + 2 * padding);
+                    const cropHeight = Math.min(mapCanvas.height - cropY, se.y - nw.y + 2 * padding);
+                    
+                    // Create final canvas
+                    const finalCanvas = document.createElement('canvas');
+                    const ctx = finalCanvas.getContext('2d');
+                    
+                    // Canvas dimensions
+                    const titleHeight = 100;
+                    const legendWidth = 250;
+                    const margin = 40;
+                    finalCanvas.width = cropWidth + legendWidth + margin * 2;
+                    finalCanvas.height = cropHeight + titleHeight + margin * 2;
+                    
+                    // White background
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+                    
+                    // Draw title
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 28px Arial, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Morocco Wheat Yield Gap Analysis', finalCanvas.width / 2, 40);
+                    
+                    ctx.font = '18px Arial, sans-serif';
+                    ctx.fillStyle = '#64748b';
+                    ctx.fillText(`${metricName} - ${yearDisplay}`, finalCanvas.width / 2, 70);
+                    
+                    // Draw cropped map (Morocco only)
+                    ctx.drawImage(
+                        mapCanvas,
+                        cropX, cropY, cropWidth, cropHeight,  // Source
+                        margin, titleHeight, cropWidth, cropHeight  // Destination
+                    );
+                    
+                    // Draw border around map
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(margin, titleHeight, cropWidth, cropHeight);
+                    
+                    // Draw legend
+                    const legendX = margin + cropWidth + 30;
+                    const legendY = titleHeight + 50;
+                    
+                    // Legend title
+                    ctx.font = 'bold 16px Arial, sans-serif';
+                    ctx.fillStyle = '#1e293b';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('Legend', legendX, legendY);
+                    
+                    // Get current colors from the actual scale
+                    const colors = colorScales[metric] || colorScales['actual_yield'];
+                    
+                    // Get values from legend
+                    const legendContent = document.getElementById('legend-content');
+                    const legendItems = legendContent.querySelectorAll('.legend-item');
+                    
+                    let y = legendY + 30;
+                    
+                    legendItems.forEach((item, index) => {
+                        const colorDiv = item.querySelector('.legend-color');
+                        const valueSpan = item.querySelector('span');
+                        
+                        if (colorDiv && valueSpan) {
+                            // Get the actual computed color
+                            const computedColor = window.getComputedStyle(colorDiv).backgroundColor;
+                            const value = valueSpan.textContent;
+                            
+                            // Draw color box with solid fill
+                            ctx.fillStyle = computedColor;
+                            ctx.fillRect(legendX, y - 12, 30, 18);
+                            
+                            // Draw border
+                            ctx.strokeStyle = '#94a3b8';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(legendX, y - 12, 30, 18);
+                            
+                            // Draw value
+                            ctx.font = '14px Arial, sans-serif';
+                            ctx.fillStyle = '#1e293b';
+                            ctx.textAlign = 'left';
+                            ctx.fillText(value, legendX + 40, y);
+                            
+                            y += 25;
+                        }
+                    });
+                    
+                    // Add unit
+                    y += 10;
+                    ctx.font = 'italic 13px Arial, sans-serif';
+                    ctx.fillStyle = '#64748b';
+                    const unit = metric.includes('percent') ? '(%)' : '(t/ha)';
+                    ctx.fillText(unit, legendX, y);
+                    
+                    // Add source note
+                    ctx.font = '11px Arial, sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Source: Morocco Yield Gap Analysis 2025', finalCanvas.width / 2, finalCanvas.height - 15);
+                    
                     // Convert to blob and download
-                    canvas.toBlob(function(blob) {
+                    finalCanvas.toBlob(function(blob) {
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.download = fileName;
@@ -2583,13 +2724,8 @@
                         notification.style.background = '#22c55e';
                         setTimeout(() => notification.remove(), 2000);
                     }, 'image/png');
-                }).catch(error => {
-                    console.error('Export error:', error);
-                    notification.innerHTML = '<i class="fas fa-times"></i> Export failed. Use Ctrl+P to print';
-                    notification.style.background = '#ef4444';
-                    setTimeout(() => notification.remove(), 3000);
-                });
-            }, 500);
+                }
+            }, 100);
         }
 
         function resetView() {
@@ -2598,33 +2734,6 @@
             currentMetric = 'actual_yield';
             document.getElementById('metric-select').value = 'actual_yield';
             loadYieldData();
-        }
-
-        function resetToDefaults() {
-            // Reset map view
-            map.setView([33.0, -7.0], 6);
-            
-            // Reset to default selections
-            document.getElementById('year-select').value = '9999'; // Average
-            document.getElementById('metric-select').value = 'actual_yield';
-            document.getElementById('crop-select').value = 'wheat';
-            currentMetric = 'actual_yield';
-            currentView = 'regions';
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector('[data-view="regions"]').classList.add('active');
-            
-            // Reset checkboxes
-            document.getElementById('show-morocco').checked = true;
-            document.getElementById('show-concerned').checked = true;
-            
-            // Reload data
-            loadYieldData();
-            
-            console.log('🏠 Reset to defaults: Average year, Actual Yield, Wheat, Regions view');
         }
 
         function showHelp() {
@@ -2667,16 +2776,23 @@
                         <li>All values are in <strong>t/ha</strong> (tons per hectare)</li>
                         <li>Green colors indicate yields (higher is better)</li>
                         <li>Red colors indicate gaps (lower is better)</li>
-                        <li>Use "Average" year for overall trends across 2019-2025</li>
+                        <li>Use "Average" year for overall trends across 2019-2021</li>
                         <li>Export PNG for presentations, CSV for detailed analysis</li>
-                        <li>Click on provinces to see detailed statistics</li>
-                        <li>Click on parcel points to zoom in</li>
+                    </ul>
+                    
+                    <h3 style="color: #06b6d4; margin-top: 20px;">⌨️ Keyboard Shortcuts</h3>
+                    <ul style="line-height: 1.8;">
+                        <li><kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 3px; font-family: monospace;">H</kbd> - Show this help</li>
+                        <li><kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 3px; font-family: monospace;">R</kbd> - Reset map view</li>
+                        <li><kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 3px; font-family: monospace;">E</kbd> - Export map as PNG</li>
+                        <li><kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 3px; font-family: monospace;">←</kbd> <kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 3px; font-family: monospace;">→</kbd> - Navigate through years</li>
+                        <li><kbd style="background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 3px; font-family: monospace;">ESC</kbd> - Close province details</li>
                     </ul>
                     
                     <h3 style="color: #f59e0b; margin-top: 20px;">📚 Data Source</h3>
-                    <p style="line-height: 1.6; font-size: 0.9rem;">
-                        Lahcen, O., et al. (2026). Process-based assessment of wheat yield gap in Mediterranean rainfed conditions: 
-                        cultivar, nutrient, and sowing optimization. <em>European Journal of Agronomy</em>.
+                    <p style="line-height: 1.6;">
+                        Data from plot-level wheat trials across Morocco (2019-2021).
+                        Analysis follows established yield gap protocols (Lobell et al., 2009; van Wart et al., 2013).
                     </p>
                 </div>
             `;
@@ -2723,6 +2839,61 @@
         map.on('click', function(e) {
             document.getElementById('region-info-panel').style.display = 'none';
         });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // H key - Show help
+            if (e.key === 'h' || e.key === 'H') {
+                showHelp();
+            }
+            // R key - Reset view
+            if (e.key === 'r' || e.key === 'R') {
+                resetView();
+            }
+            // E key - Export PNG
+            if (e.key === 'e' || e.key === 'E') {
+                exportMapAsPNG();
+            }
+            // ESC key - Close info panel
+            if (e.key === 'Escape') {
+                document.getElementById('region-info-panel').style.display = 'none';
+            }
+            // Arrow keys - Cycle through years
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                const yearSelect = document.getElementById('year-select');
+                const currentIndex = yearSelect.selectedIndex;
+                if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                    yearSelect.selectedIndex = currentIndex - 1;
+                    loadYieldData();
+                } else if (e.key === 'ArrowRight' && currentIndex < yearSelect.options.length - 1) {
+                    yearSelect.selectedIndex = currentIndex + 1;
+                    loadYieldData();
+                }
+            }
+        });
+
+        // Show quick tip on first load
+        setTimeout(() => {
+            const tip = document.createElement('div');
+            tip.style.cssText = `
+                position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: white; padding: 15px 20px; border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 300px;
+                animation: fadeIn 0.3s;
+            `;
+            tip.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-keyboard" style="font-size: 1.5rem;"></i>
+                    <div style="font-size: 0.9rem;">
+                        <strong>Keyboard Shortcuts:</strong><br>
+                        Press <kbd style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">H</kbd> for Help
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(tip);
+            setTimeout(() => tip.remove(), 5000);
+        }, 2000);
     </script>
 </body>
 </html>
