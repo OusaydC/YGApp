@@ -5,8 +5,8 @@ services:
     name: yield-gap-app
     env: python
     plan: free
-    # Robust build command: Upgrade tools first, then install with no build isolation
-    buildCommand: python -m pip install --upgrade --force-reinstall "pip>=24.0" "setuptools>=70.0" "wheel>=0.43" && python -m pip install --only-binary=:all: --prefer-binary -r requirements.txt && cd WebAppYG && python manage.py migrate && python manage.py collectstatic --noinput
+    # Robust build command: Upgrade tools first, then install with no build isolation, then load data
+    buildCommand: python -m pip install --upgrade --force-reinstall "pip>=24.0" "setuptools>=70.0" "wheel>=0.43" && python -m pip install --only-binary=:all: --prefer-binary -r requirements.txt && cd WebAppYG && python manage.py migrate && python manage.py collectstatic --noinput && (python manage.py load_shapefiles --shapefile data/Shapefiles/Morocco/Morocco.shp || echo "Morocco: skipped") && (python manage.py load_shapefiles --shapefile data/Shapefiles/Concerned_Provinces.shp || echo "Provinces: skipped") && (python manage.py load_variety_shapefiles || echo "Varieties: skipped") && (python manage.py load_real_data || echo "Yield data: skipped")
     startCommand: cd WebAppYG && gunicorn yg_ma.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: DEBUG
