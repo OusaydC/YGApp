@@ -3,6 +3,7 @@ services:
   web:
     type: web
     name: yield-gap-app
+    dockerContext: .
     dockerfilePath: ./Dockerfile
     plan: free
     envVars:
