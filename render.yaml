@@ -5,9 +5,10 @@ services:
     name: yield-gap-app
     env: python
     plan: free
-    # Robust build command: Upgrade tools first, then install with no build isolation, then load data
+    # Build: install deps, run migrations once (build FS), collect static, try data load (non-fatal)
     buildCommand: python -m pip install --upgrade --force-reinstall "pip>=24.0" "setuptools>=70.0" "wheel>=0.43" && python -m pip install --only-binary=:all: --prefer-binary -r requirements.txt && cd WebAppYG && python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --noinput && (python check_and_load_data.py || echo "Data loading will retry on startup")
-    startCommand: cd WebAppYG && python check_and_load_data.py && gunicorn yg_ma.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    # Runtime: ensure migrations on the live DB, then ensure data is loaded, then start Gunicorn
+    startCommand: cd WebAppYG && python manage.py migrate && python check_and_load_data.py && gunicorn yg_ma.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: DEBUG
         value: False
