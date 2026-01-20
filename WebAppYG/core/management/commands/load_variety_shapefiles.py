@@ -13,10 +13,29 @@ class Command(BaseCommand):
                           default='data/Shapefiles/Varieties')
 
     def handle(self, *args, **options):
+        from django.conf import settings
+        from pathlib import Path
+        
         shapefile_dir = options['dir']
+        
+        # Convert to absolute path if relative
+        if not os.path.isabs(shapefile_dir):
+            base_dir = Path(settings.BASE_DIR)
+            shapefile_dir = str(base_dir / shapefile_dir)
         
         if not os.path.exists(shapefile_dir):
             self.stdout.write(self.style.ERROR(f'Directory not found: {shapefile_dir}'))
+            # Try to find the directory
+            base_dir = Path(settings.BASE_DIR)
+            varieties_base = base_dir / 'data' / 'Shapefiles' / 'Varieties'
+            if varieties_base.exists():
+                self.stdout.write(f'Found Varieties directory at: {varieties_base}')
+                # List subdirectories
+                for subdir in varieties_base.iterdir():
+                    if subdir.is_dir():
+                        self.stdout.write(f'  Subdirectory: {subdir.name}')
+                        for shp in subdir.glob('*.shp'):
+                            self.stdout.write(f'    - {shp.name}')
             return
 
         # Clear existing parcel points
@@ -34,8 +53,30 @@ class Command(BaseCommand):
 
         created_count = 0
         
+        # Convert to Path object
+        if isinstance(shapefile_dir, str):
+            if os.path.isabs(shapefile_dir):
+                base_varieties_dir = Path(shapefile_dir)
+            else:
+                base_varieties_dir = Path(settings.BASE_DIR) / shapefile_dir
+        else:
+            base_varieties_dir = shapefile_dir
+        
         for variety_file in variety_files:
-            file_path = os.path.join(shapefile_dir, variety_file)
+            # Try direct path first
+            file_path = base_varieties_dir / variety_file
+            
+            # If not found, search in subdirectories
+            if not file_path.exists() and base_varieties_dir.exists():
+                for subdir in base_varieties_dir.iterdir():
+                    if subdir.is_dir():
+                        potential_path = subdir / variety_file
+                        if potential_path.exists():
+                            file_path = potential_path
+                            self.stdout.write(f'Found {variety_file} in subdirectory: {subdir.name}')
+                            break
+            
+            file_path = str(file_path)
             
             if not os.path.exists(file_path):
                 self.stdout.write(self.style.WARNING(f'Shapefile not found: {file_path}'))
