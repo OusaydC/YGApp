@@ -18,4 +18,6 @@ services:
         generateValue: true
       - key: PYTHONUNBUFFERED
         value: 1
+      - key: DATABASE_URL
+        value: postgresql://yg_db_user:kLNWPLV2FH9nlUaEuLWoxGquJAhkKTBY@dpg-d5nmlsbe5dus73f8b96g-a/yg_db
     healthCheckPath: /
