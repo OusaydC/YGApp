@@ -1299,6 +1299,8 @@
                         <span>for</span>
         <select id="crop-select">
                             <option value="wheat" selected>Wheat</option>
+                            <option value="barley">Barley</option>
+                            <option value="maize">Maize</option>
         </select>
                         <span>in</span>
         <select id="year-select">
@@ -1651,7 +1653,8 @@
             const encodedGeoJSON = encodeURIComponent(JSON.stringify(parcelGeoJSON));
             
             // Open geojson.io with the parcel point and zoom to location
-            const geojsonUrl = `https://geojson.io/#data=data:application/json,${encodedGeoJSON}&map=15/${lat}/${lng}`;
+            // Format: map parameter first (zoom/lat/lng), then data
+            const geojsonUrl = `https://geojson.io/#map=15/${lat}/${lng}&data=data:application/json,${encodedGeoJSON}`;
             window.open(geojsonUrl, '_blank');
             
             console.log(`Opening geojson.io for parcel ${parcelId} at coordinates: ${lat}, ${lng}`);
@@ -1693,9 +1696,16 @@
                     // Clear all existing options
                     select.innerHTML = '';
                     
-                    // Add unique crops only
-                    const uniqueCrops = [...new Set(data.map(crop => crop.name))];
-                    uniqueCrops.forEach(cropName => {
+                    // Always include these crops (even if not in database yet)
+                    const defaultCrops = ['wheat', 'barley', 'maize'];
+                    
+                    // Add unique crops from API
+                    const apiCrops = data.map(crop => crop.name.toLowerCase());
+                    
+                    // Combine default crops with API crops (unique)
+                    const allCrops = [...new Set([...defaultCrops, ...apiCrops])];
+                    
+                    allCrops.forEach(cropName => {
                         const option = document.createElement('option');
                         option.value = cropName;
                         option.textContent = cropName.charAt(0).toUpperCase() + cropName.slice(1);
@@ -1703,7 +1713,20 @@
                         select.appendChild(option);
                     });
                 })
-                .catch(error => console.error('Error loading crops:', error));
+                .catch(error => {
+                    console.error('Error loading crops:', error);
+                    // On error, ensure default crops are still shown
+                    const select = document.getElementById('crop-select');
+                    if (select.options.length === 0) {
+                        ['wheat', 'barley', 'maize'].forEach(cropName => {
+                            const option = document.createElement('option');
+                            option.value = cropName;
+                            option.textContent = cropName.charAt(0).toUpperCase() + cropName.slice(1);
+                            if (cropName === 'wheat') option.selected = true;
+                            select.appendChild(option);
+                        });
+                    }
+                });
         }
 
         function loadYears() {
@@ -2209,9 +2232,32 @@
                     </div>
                 </div>
             `;
+            
+            // Convert lat/lng to screen coordinates
+            const point = map.latLngToContainerPoint(latlng);
+            const mapContainer = document.getElementById('map');
+            const mapRect = mapContainer.getBoundingClientRect();
+            
+            // Position tooltip next to the mouse, offset to the right
+            let left = mapRect.left + point.x + 15;
+            let top = mapRect.top + point.y - 10;
+            
+            // Make sure tooltip doesn't go off screen
+            const tooltipWidth = 250;
+            const tooltipHeight = 200;
+            if (left + tooltipWidth > window.innerWidth) {
+                left = mapRect.left + point.x - tooltipWidth - 15;
+            }
+            if (top + tooltipHeight > window.innerHeight) {
+                top = window.innerHeight - tooltipHeight - 10;
+            }
+            if (top < 0) {
+                top = 10;
+            }
+            
             tooltip.style.display = 'block';
-            tooltip.style.left = (latlng.lng + 0.1) + 'px';
-            tooltip.style.top = (latlng.lat - 0.1) + 'px';
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
         }
 
         function hideTooltip() {
